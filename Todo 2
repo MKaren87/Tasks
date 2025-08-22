@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 
 app = FastAPI()
 
@@ -9,7 +9,13 @@ class TodoItem(BaseModel):
     title: str = Field(..., min_length=3, max_length=100)
     description: Optional[str] = None
     completed: bool = False
-    due_date: Optional[date] = None
+    due_date: Optional[datetime] = None
+
+    @validator("due_date")
+    def validate_due_date(cls, value):
+        if value and value < datetime.now():
+            raise ValueError("Due date must be today or in the future")
+        return value
 
 class DescriptionUpdate(BaseModel):
     description: str
@@ -18,7 +24,6 @@ todo_db = []
 
 @app.post("/todos/")
 async def create_todo(item: TodoItem):
-    # Проверка уникальности title
     for todo in todo_db:
         if todo['title'].lower() == item.title.lower():
             raise HTTPException(status_code=400, detail="Todo title must be unique")
@@ -49,6 +54,15 @@ async def delete_todo(todo_id: int):
     todo_db = [todo for todo in todo_db if todo['id'] != todo_id]
     return {"message": "Todo item deleted successfully"}
 
+@app.get("/todos/overdue")
+async def get_overdue_todos():
+    now = datetime.now()
+    overdue = [
+        todo for todo in todo_db
+        if todo.get("due_date") and todo["due_date"] < now and not todo["completed"]
+    ]
+    return overdue
+
 @app.get("/todos/")
 async def list_todos(
     skip: int = Query(0, ge=0),
@@ -64,7 +78,6 @@ async def list_todos(
     if completed is not None:
         results = [todo for todo in results if todo['completed'] == completed]
 
-    # Сортировка
     if sort_by == "title":
         results.sort(key=lambda x: x['title'].lower())
     elif sort_by == "due_date":
