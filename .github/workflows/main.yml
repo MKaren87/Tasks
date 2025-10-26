@@ -1,0 +1,15 @@
+name: Python CI
+
+on: [push]  # Событие-триггер
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Среда выполнения
+
+    steps:
+      - uses: actions/checkout@v3  # Клонирование репозитория
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: pip install -r requirements.txt
+      - run: pytest
