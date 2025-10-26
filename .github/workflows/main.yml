@@ -1,13 +1,13 @@
 name: Python CI
 
-on: [push]  # Событие-триггер
+on: [push]  
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Среда выполнения
+    runs-on: ubuntu-latest  
 
     steps:
-      - uses: actions/checkout@v3  # Клонирование репозитория
+      - uses: actions/checkout@v3  
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
