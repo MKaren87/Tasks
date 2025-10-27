@@ -1,0 +1,17 @@
+name: Manual DELETE /books/{title}
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Title of the book to delete'
+        required: true
+        type: string
+
+jobs:
+  delete-book:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call DELETE /books/{title}
+        run: |
+          curl -X DELETE https://your-api-domain.com/books/${{ github.event.inputs.title }}
