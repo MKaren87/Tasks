@@ -1,1 +1,12 @@
+name: Manual GET /books
 
+on:
+  workflow_dispatch:
+
+jobs:
+  get-books:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call GET /books
+        run: |
+          curl -X GET https://your-api-domain.com/books
