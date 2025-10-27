@@ -1,0 +1,35 @@
+from fastapi import FastAPI, Query
+
+app = FastAPI()
+
+books = [{"title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "year": 1925},
+         {"title": "1984", "author": "George Orwell", "year": 1949},
+         {"title": "To Kill a Mockingbird", "author": "Harper Lee", "year": 1960}]
+
+@app.get("/books")
+def get_books():
+    return books
+
+@app.get("/books/")
+def get_book(title: str = Query(...)):
+    for book in books:
+        if book["title"] == title:
+            return book
+    return {"error": "Book not found"}
+
+@app.post("/books")
+def add_book(title, year):
+    for book in books:
+        if book["title"] == title:
+            return {"error": "Book already exists"}
+    tmp = {"title": title, "year": year}
+    books.append(tmp)
+    return {"message": "Book added successfully"}
+
+@app.delete("/books/{title}")
+def delete_book(title):
+    for book in books:
+        if book["title"] == title:
+            books.remove(book)
+            return {"message": "Book deleted successfully"}
+    return {"error": "Book not found"}
