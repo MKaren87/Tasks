@@ -1,0 +1,17 @@
+name: Manual GET /books/?title=
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Book title to fetch'
+        required: true
+        type: string
+
+jobs:
+  get-book:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call GET /books/?title=
+        run: |
+          curl -G https://your-api-domain.com/books/ --data-urlencode "title=${{ github.event.inputs.title }}"
