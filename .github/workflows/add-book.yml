@@ -1,0 +1,23 @@
+name: Manual POST /books
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Title of the book'
+        required: true
+        type: string
+      year:
+        description: 'Year of publication'
+        required: true
+        type: string
+
+jobs:
+  add-book:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call POST /books
+        run: |
+          curl -X POST https://your-api-domain.com/books \
+            -d "title=${{ github.event.inputs.title }}" \
+            -d "year=${{ github.event.inputs.year }}"
