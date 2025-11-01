@@ -1,0 +1,17 @@
+import pandas as pd
+
+data = [
+    ["2024-09-01", "USA", "Electronics", 12000, 3000],
+    ["2024-09-02", "Germany", "Clothing", 8500, 2200],
+    ["2024-09-03", "France", "Electronics", 9000, 2100],
+    ["2024-09-04", "USA", "Furniture", 11000, 2500],
+    ["2024-09-05", "Germany", "Electronics", 13000, 3100],
+    ["2024-09-06", "France", "Clothing", 9500, 2000],
+    ["2024-09-07", "USA", "Clothing", 8800, 1900],
+    ["2024-09-08", "Germany", "Furniture", 10200, 2800],
+    ["2024-09-09", "France", "Furniture", 12000, 2900],
+    ["2024-09-10", "USA", "Electronics", 12500, 3200],
+]
+
+df = pd.DataFrame(data, columns=["Date", "Country", "Category", "Sales", "Profit"])
+df.to_csv("sales_data.csv", index=False)
