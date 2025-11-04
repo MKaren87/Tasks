@@ -1,0 +1,100 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from sqlalchemy import create_engine
+from fastapi import FastAPI
+import uvicorn
+
+# 📦 Инициализация
+engine = create_engine("sqlite:///company.db")
+
+# 🧩 Task 1 — CSV → SQL
+# Загрузка сотрудников
+employees_df = pd.read_csv("employees.csv")
+employees_df.to_sql("employees", con=engine, if_exists="replace", index=False)
+
+# 🧩 Task 2 — SQL Query: salary > 5000
+query_high_salary = """
+SELECT * FROM employees
+WHERE salary > 5000
+ORDER BY salary DESC
+"""
+high_salary_df = pd.read_sql(query_high_salary, con=engine)
+print("💰 Сотрудники с зарплатой > 5000:\n", high_salary_df)
+
+# 🧩 Task 3 — JOIN + Aggregation
+# Создание и загрузка departments.csv
+departments_df = pd.DataFrame({
+    "dept_id": [1, 2, 3],
+    "department_name": ["IT", "HR", "Finance"]
+})
+departments_df.to_csv("departments.csv", index=False)
+departments_df.to_sql("departments", con=engine, if_exists="replace", index=False)
+
+# JOIN: сотрудники + отделы
+join_query = """
+SELECT e.id, e.name, d.department_name, e.salary
+FROM employees e
+JOIN departments d ON e.department = d.dept_id
+"""
+joined_df = pd.read_sql(join_query, con=engine)
+print("👥 Сотрудники с названиями отделов:\n", joined_df)
+
+# Средняя зарплата по отделам
+avg_salary_query = """
+SELECT d.department_name, AVG(e.salary) AS avg_salary
+FROM employees e
+JOIN departments d ON e.department = d.dept_id
+GROUP BY d.department_name
+"""
+avg_salary_df = pd.read_sql(avg_salary_query, con=engine)
+print("📊 Средняя зарплата по отделам:\n", avg_salary_df)
+
+# 🧩 Task 4 — Обновление зарплаты в IT
+update_query = """
+UPDATE employees
+SET salary = salary * 1.1
+WHERE department = 1
+"""
+with engine.connect() as conn:
+    conn.execute(update_query)
+
+# Проверка обновлений
+updated_df = pd.read_sql("SELECT * FROM employees", con=engine)
+print("🔄 Обновленные данные сотрудников:\n", updated_df)
+
+# 🧩 Task 5 — Визуализация
+# Группировка и визуализация
+plot_df = pd.read_sql("""
+SELECT d.department_name, e.salary
+FROM employees e
+JOIN departments d ON e.department = d.dept_id
+""", con=engine)
+
+avg_plot = plot_df.groupby("department_name")["salary"].mean()
+avg_plot.plot(kind="bar", title="Average Salary by Department")
+plt.ylabel("Salary")
+plt.tight_layout()
+plt.savefig("avg_salary.png")
+plt.show()
+
+# 🎯 Optional — FastAPI Report Generator
+app = FastAPI()
+
+@app.get("/employees")
+def get_employees():
+    df = pd.read_sql("SELECT * FROM employees", con=engine)
+    return df.to_dict(orient="records")
+
+@app.get("/avg-salary")
+def get_avg_salary():
+    df = pd.read_sql(avg_salary_query, con=engine)
+    return df.to_dict(orient="records")
+
+@app.get("/top-earners")
+def get_top_earners():
+    df = pd.read_sql("SELECT * FROM employees ORDER BY salary DESC LIMIT 3", con=engine)
+    return df.to_dict(orient="records")
+
+# Запуск FastAPI (локально)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="127.0.0.1", port=8000)
