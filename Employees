@@ -1,0 +1,70 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from sqlalchemy import create_engine
+from fastapi import FastAPI
+import uvicorn
+
+engine = create_engine("sqlite:///company.db")
+
+employees_df = pd.DataFrame({
+    "id": [1, 2, 3, 4, 5, 6, 7],
+    "name": ["Alice", "Bob", "Charlie", "Diana", "Eva", "Frank", "Grace"],
+    "department": [1, 2, 1, 3, 2, 3, 1],
+    "salary": [6000, 4500, 7000, 5200, 4800, 6100, 5500]
+})
+employees_df.to_csv("employees.csv", index=False)
+employees_df.to_sql("employees", con=engine, if_exists="replace", index=False)
+
+departments_df = pd.DataFrame({
+    "dept_id": [1, 2, 3],
+    "department_name": ["IT", "HR", "Finance"]
+})
+departments_df.to_csv("departments.csv", index=False)
+departments_df.to_sql("departments", con=engine, if_exists="replace", index=False)
+
+df = pd.read_sql("employees", con=engine)
+filtered = df[df["salary"] > 5000].sort_values(by="salary", ascending=False)
+print("💰 Сотрудники с зарплатой > 5000:\n", filtered)
+
+emp_df = pd.read_sql("employees", con=engine)
+dept_df = pd.read_sql("departments", con=engine)
+merged = pd.merge(emp_df, dept_df, left_on="department", right_on="dept_id")
+print("👥 Сотрудники с названиями отделов:\n", merged[["id", "name", "department_name", "salary"]])
+
+avg_salary = merged.groupby("department_name")["salary"].mean()
+print("📊 Средняя зарплата по отделам:\n", avg_salary)
+
+emp_df.loc[emp_df["department"] == 1, "salary"] *= 1.1
+emp_df.to_sql("employees", con=engine, if_exists="replace", index=False)
+
+updated_df = pd.read_sql("employees", con=engine)
+print("🔄 Обновленные данные сотрудников:\n", updated_df)
+
+merged_updated = pd.merge(updated_df, dept_df, left_on="department", right_on="dept_id")
+avg_salary_updated = merged_updated.groupby("department_name")["salary"].mean()
+avg_salary_updated.plot(kind="bar", title="Average Salary by Department")
+plt.ylabel("Salary")
+plt.tight_layout()
+plt.savefig("avg_salary.png")
+plt.show()
+
+app = FastAPI()
+
+@app.get("/employees")
+def get_employees():
+    df = pd.read_sql("employees", con=engine)
+    return df.to_dict(orient="records")
+
+@app.get("/avg-salary")
+def get_avg_salary():
+    emp_df = pd.read_sql("employees", con=engine)
+    dept_df = pd.read_sql("departments", con=engine)
+    merged = pd.merge(emp_df, dept_df, left_on="department", right_on="dept_id")
+    avg_salary = merged.groupby("department_name")["salary"].mean().reset_index()
+    return avg_salary.to_dict(orient="records")
+
+@app.get("/top-earners")
+def get_top_earners():
+    df = pd.read_sql("employees", con=engine)
+    top = df.sort_values(by="salary", ascending=False).head(3)
+    return top.to_dict(orient="records")
